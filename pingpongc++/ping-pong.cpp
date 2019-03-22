@@ -5,61 +5,78 @@
 
 using namespace std;
 
+typedef double real;
+
 int main(void){
 
-
   // write results out to a text file with this name
-  string fileName="singleNode.txt";
+  string fileName="doubleDataO3.txt";
 
   // number of runs to perform to average out the noise.
-  int commNum = 10000;
+  int commNum = 5000;
 
   int totalSize = pow(2,24);
   int rank;
-
-  // here I allocate a single array of max size
-  // and send only parts of it.
-  char* buffer = (char* ) calloc(totalSize*sizeof(char));
-
+  int numRanks;
   double start, end, totalTime;
 
   MPI_Init(NULL,NULL);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&numRanks);
 
-  MPI_Status status;
+  int rank0 = 0;
+  int rank1 = (numRanks-1);
+  cout << rank1 << endl;
+  cout << "myrank = " << rank << endl;
+
+  double rank1Avg;
+
+  MPI_Status status1;
+  MPI_Status status2;
 
   //only rank 0 writes to txt file
   ofstream myFile;
-  if(rank==0){
+  if(rank == rank0){
     myFile.open(fileName);
   }
 
   //main loop to comm and average
   for( int n = 1; n <= totalSize; n*=2){
-    int dataSize = n; //only send the first n elements of buffer
-    start = MPI_Wtime();
+    totalTime = 0;
+    real* buffer = (real* ) malloc(n*sizeof(real));
     for (int i =0; i < commNum; i++){
-      if(rank ==0){
-        MPI_Ssend(buffer,dataSize,MPI_CHAR,1,0,MPI_COMM_WORLD);
-        MPI_Recv(buffer,dataSize,MPI_CHAR,1,0,MPI_COMM_WORLD,&status);
+      start = MPI_Wtime();
+      if(rank == rank0){
+        MPI_Ssend(buffer,n,MPI_DOUBLE,rank1,0,MPI_COMM_WORLD);
+        MPI_Recv(buffer,n,MPI_DOUBLE,rank1,0,MPI_COMM_WORLD,&status1);
       }
-      else{
-        MPI_Recv(buffer,dataSize,MPI_CHAR,0,0,MPI_COMM_WORLD,&status);
-        MPI_Ssend(buffer,dataSize,MPI_CHAR,0,0,MPI_COMM_WORLD);
+      else if(rank == rank1){
+        MPI_Recv(buffer,n,MPI_DOUBLE,rank0,0,MPI_COMM_WORLD,&status1);
+        MPI_Ssend(buffer,n,MPI_DOUBLE,rank0,0,MPI_COMM_WORLD);
       }
+      //measure only on rank 0
+      end = MPI_Wtime();
+      totalTime += end - start;
     }
-
-    //measure only on rank 0
-    end = MPI_Wtime();
-    totalTime = end - start;
-    if(rank == 0){
-      myFile << (double)dataSize << " " << (totalTime/((double)commNum)) << endl;
+    free(buffer);
+    double avgTime = (totalTime/((double)commNum));
+    if(rank == rank0){
+      MPI_Recv(&rank1Avg,1,MPI_DOUBLE,rank1,1,MPI_COMM_WORLD,&status2);
+    }
+    else if (rank == rank1){
+      MPI_Ssend(&avgTime,1,MPI_DOUBLE,rank0,1,MPI_COMM_WORLD);
+    }
+    if(rank == rank0){
+      cout << "dataSize =  " << n << endl;
+      myFile << n << " " << (totalTime/((double)commNum)) << " " << rank1Avg << endl;
     }
   }
-  if(rank == 0){
+
+  if(rank == rank0){
     myFile.close();
   }
-  free(buffer);
+
   MPI_Finalize();
+
   return 0;
 }
