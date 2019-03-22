@@ -1,30 +1,40 @@
 from mpi4py import MPI
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 
 comm = MPI.COMM_WORLD
 
 size = comm.size
 rank = comm.rank
-j = 1 # other rank
-#mess = np.array([0],dtype='i')
-mess = np.ones((1000),dtype='i')
-if rank == 1:
-	mess[0] = 74
 
-steps = 100
+def trial(steps,size):
+    mess = np.ones((size),dtype='d')
+    print(mess.shape)
+    tot_time = 0
 
-tot_time = 0
-for t in range(steps):
-	start = time.time()
-	if rank == 0:
-		#print('Rank:',rank,'has data',mess)
-		comm.Isend([mess, MPI.INT], dest = 1, tag = 0)
-		comm.Irecv([mess, MPI.INT], source = 1, tag = 1)
-	if rank == j:
-		#print('Rank:',rank,'has data',mess)
-		comm.Irecv([mess, MPI.INT], source = 0, tag = 0)
-		comm.Isend([mess, MPI.INT], dest = 0, tag = 1)
-	end = time.time()
-	tot_time += end - start
-print('Time per send-recv:',tot_time/steps,'s')
+    for t in range(steps):
+        start = MPI.Wtime()
+		
+        if rank == 0:
+        	comm.Isend(mess, dest = 1, tag = 0)
+        	req = comm.Irecv(mess, source = 1, tag = 1)
+        if rank == 1:
+            req = comm.Irecv(mess, source = 0, tag = 0)
+            comm.isend(mess, dest = 0, tag = 1)
+
+        end = MPI.Wtime()
+        tot_time += end-start
+
+        return tot_time/steps
+
+data = []
+for n in range(0,25,2):
+    t = trial(50000,2**n)
+    if rank == 0:
+        data.append(t)
+        # print('n =',2**n)
+        # print('Time per send-recv:',t)
+if rank == 0:
+    plt.loglog(range(0,25,2),data)
+    plt.show()
