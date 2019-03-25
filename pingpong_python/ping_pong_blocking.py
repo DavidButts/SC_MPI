@@ -8,7 +8,7 @@ comm = MPI.COMM_WORLD
 size = comm.size
 rank = comm.rank
 
-f=open("python_blocking.txt","w")
+f=open("Python_Blocking_Double.txt","w")
 
 
 def trial(steps,size):

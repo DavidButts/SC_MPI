@@ -10,7 +10,7 @@ typedef double real;
 int main(void){
 
   // write results out to a text file with this name
-  string fileName="doubleDataO3.txt";
+  string fileName="Cpp_Block_Double.txt";
 
   // number of runs to perform to average out the noise.
   int commNum = 5000;
@@ -40,10 +40,14 @@ int main(void){
     myFile.open(fileName);
   }
 
-  //main loop to comm and average
+  //loop over size of data
   for( int n = 1; n <= totalSize; n*=2){
+
+     //all ranks allocate memory
+     real* buffer = (real* ) malloc(n*sizeof(real));
+
+    //perform average of commNum send and recvs
     totalTime = 0;
-    real* buffer = (real* ) malloc(n*sizeof(real));
     for (int i =0; i < commNum; i++){
       start = MPI_Wtime();
       if(rank == rank0){
@@ -54,24 +58,33 @@ int main(void){
         MPI_Recv(buffer,n,MPI_DOUBLE,rank0,0,MPI_COMM_WORLD,&status1);
         MPI_Ssend(buffer,n,MPI_DOUBLE,rank0,0,MPI_COMM_WORLD);
       }
-      //measure only on rank 0
       end = MPI_Wtime();
       totalTime += end - start;
     }
+
+    //all ranks free memory
     free(buffer);
+
+    //all ranks compute thier average
     double avgTime = (totalTime/((double)commNum));
+
+    //rank1 sends rank0 its average time
     if(rank == rank0){
       MPI_Recv(&rank1Avg,1,MPI_DOUBLE,rank1,1,MPI_COMM_WORLD,&status2);
     }
     else if (rank == rank1){
       MPI_Ssend(&avgTime,1,MPI_DOUBLE,rank0,1,MPI_COMM_WORLD);
     }
+
+    //rank0 writes its time average and rank1's time avg out to file
     if(rank == rank0){
       cout << "dataSize =  " << n << endl;
       myFile << n << " " << (totalTime/((double)commNum)) << " " << rank1Avg << endl;
     }
   }
 
+  //rank0 close file since it was
+  //only rank to open it.
   if(rank == rank0){
     myFile.close();
   }
