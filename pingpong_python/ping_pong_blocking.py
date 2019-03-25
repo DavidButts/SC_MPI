@@ -8,11 +8,12 @@ comm = MPI.COMM_WORLD
 size = comm.size
 rank = comm.rank
 
+f=open("python_blocking.txt","w")
+
+
 def trial(steps,size):
     mess = np.ones((size),dtype=np.float64)
-    print(mess.shape)
     tot_time = 0
-
     for t in range(steps):
         start = MPI.Wtime()
         if rank == 0:
@@ -24,15 +25,18 @@ def trial(steps,size):
         end = MPI.Wtime()
         tot_time += end-start
 
-        return tot_time/steps
+    return np.float64(tot_time/steps)
 
-data = []
 for n in range(0,25,2):
-    t = trial(50000,2**n)
+    t = trial(5000,2**n)
+
+    if rank == 1:
+        comm.send(t, dest = 0, tag = 2)
+
     if rank == 0:
-        data.append(t)
-        # print('n =',2**n)
-        # print('Time per send-recv:',t)
-if rank == 0:
-    plt.loglog(range(0,25,2),data)
-    plt.show()
+        rank1Time = comm.recv(source = 1,tag=2)
+        print('n = %d' %(2**n))
+        strOut=("%d %f %f\n" %(2**n,t,rank1Time) )
+        f.write(strOut)
+
+f.close()
