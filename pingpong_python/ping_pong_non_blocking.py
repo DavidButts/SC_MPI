@@ -28,9 +28,9 @@ def trial(steps,n):
         start = MPI.Wtime()
         if rank == 0:
             req = comm.Isend([mess_out, MPI.DOUBLE], dest = (size-1), tag = 0)
-            comm.Recv([mess_in, MPI.DOUBLE], source = (size-1), tag = 1)
+            comm.Irecv([mess_in, MPI.DOUBLE], source = (size-1), tag = 1)
         if rank == 1:
-            comm.Recv([mess_in, MPI.DOUBLE], source = 0, tag = 0)
+            comm.Irecv([mess_in, MPI.DOUBLE], source = 0, tag = 0)
             req = comm.Isend([mess_out, MPI.DOUBLE], dest = 0, tag = 1)
         req.Wait()
         end = MPI.Wtime()
