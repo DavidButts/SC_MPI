@@ -19,6 +19,7 @@ int main(void){
   int rank;
   int numRanks;
   double start, end, totalTime;
+  real* buffer=NULL;
 
   MPI_Init(NULL,NULL);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -43,8 +44,13 @@ int main(void){
   //loop over size of data
   for( int n = 1; n <= totalSize; n*=2){
 
-     //all ranks allocate memory
-     real* buffer = (real* ) malloc(n*sizeof(real));
+     //ranks 1 and 0 allocate memory
+     if(rank==rank0){
+       buffer = (real* ) malloc(n*sizeof(real));
+     }
+     if(rank==rank1){
+       buffer = (real* ) malloc(n*sizeof(real));
+     }
 
     //perform average of commNum send and recvs
     totalTime = 0;
@@ -62,8 +68,13 @@ int main(void){
       totalTime += end - start;
     }
 
-    //all ranks free memory
-    free(buffer);
+    //ranks 1 and 0 free memory
+     if(rank==rank0){
+       free(buffer);
+     }
+     if(rank==rank1){
+       free(buffer);
+     }
 
     //all ranks compute thier average
     double avgTime = (totalTime/((double)commNum));

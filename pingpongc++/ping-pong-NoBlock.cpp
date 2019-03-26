@@ -16,7 +16,7 @@ int main(void){
   // number of times to average over
   int commNum = 5000;
 
-  int totalSize = pow(2,4);
+  int totalSize = pow(2,24);
   int rank;
   int size;
   real* bufferSend = NULL;
@@ -58,14 +58,16 @@ int main(void){
     for (int i =0; i < commNum; i++){
       start = MPI_Wtime();
       if(rank ==0){
-        MPI_Isend(bufferSend,n,MPI_DOUBLE,size-1,0,MPI_COMM_WORLD,&sendreq);
+        MPI_Isend(bufferSend,n,MPI_DOUBLE,size-1,1,MPI_COMM_WORLD,&sendreq);
         MPI_Irecv(bufferRecv,n,MPI_DOUBLE,size-1,0,MPI_COMM_WORLD,&recvreq);
         MPI_Wait(&recvreq,&status);
+        MPI_Wait(&sendreq,&status);
       }
       if(rank == size-1){
+        MPI_Irecv(bufferRecv,n,MPI_DOUBLE,0,1,MPI_COMM_WORLD,&recvreq);
         MPI_Isend(bufferSend,n,MPI_DOUBLE,0,0,MPI_COMM_WORLD,&sendreq);
-        MPI_Irecv(bufferRecv,n,MPI_DOUBLE,0,0,MPI_COMM_WORLD,&recvreq);
         MPI_Wait(&recvreq,&status);
+        MPI_Wait(&sendreq,&status);
       }
       end = MPI_Wtime();
       totalTime += end - start;
@@ -89,10 +91,10 @@ int main(void){
     //rank1 send rank0 its average
     double rank1Avg = 0;
     if(rank == 0){
-      MPI_Recv(&rank1Avg,1,MPI_DOUBLE,size-1,1,MPI_COMM_WORLD,&status2);
+      MPI_Recv(&rank1Avg,1,MPI_DOUBLE,size-1,2,MPI_COMM_WORLD,&status2);
     }
     if (rank == size-1){
-      MPI_Ssend(&avgTime,1,MPI_DOUBLE,0,1,MPI_COMM_WORLD);
+      MPI_Ssend(&avgTime,1,MPI_DOUBLE,0,2,MPI_COMM_WORLD);
     }
 
     //rank0 write time average of rank0/rank1 out to txt file.
