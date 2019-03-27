@@ -1,4 +1,6 @@
-#sBATCH --time=00:30:00             # limit of wall clock time - how long the job will run (same as -t)
+#!/bin/bash
+
+#SBATCH --time=00:30:00             # limit of wall clock time - how long the job will run (same as -t)
 #SBATCH --nodes=1
 #SBATCH --ntasks=2                 # number of tasks - how many tasks (nodes) that you require (same as -n)
 #SBATCH --tasks-per-node=40
