@@ -36,9 +36,11 @@ home="../../.."
 
 cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_c++.py"
 echo $cmd       
+$cmd
 
 cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_non_blocking.py"
 echo $cmd  
+$cmd
 
 ######## C++ runs ##########
 
