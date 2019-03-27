@@ -11,7 +11,12 @@
 #SBATCH -m block:cyclic          # number of CPUs (or cores) per task (same as -c)
 #SBATCH --mem=MaxPerNode                   # memory required per node - amount of memory (in bytes)
 #SBATCH --job-name parJob      # you can give your job a name for easier identification (same as -J)
- 
+
+#TO RUN LOAD THE FOLLOWING MODULES IN THE FOLLOWING ORDER!!!!!
+#module purge
+#module load GCC/7.3.0-2.30
+#module load OpenMPI/3.1.1-CUDA
+#module load Python/3.7.0 
  
 ########## Command Lines to Run ##########
   
