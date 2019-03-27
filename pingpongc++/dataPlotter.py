@@ -19,12 +19,27 @@ yAvg_03 = (y1_03+y0_03)/2.0
 yAvg_py = (y1_py+y0_py)/2.0
 yAvg_NB = (y1_NB+y0_NB)/2.0
 
-plt.loglog(x*8,yAvg,label="C++ Blocking")
-plt.loglog(x_03*8,yAvg_03,label="C++ Non-Blocking")
-plt.loglog(x_py*8,yAvg_py,label="Python Blocking")
-plt.loglog(x_NB*8,yAvg_NB,label="Python Non-Blocking")
+plt.plot(x*8,yAvg,label="C++ Blocking")
+plt.plot(x_03*8,yAvg_03,label="C++ Non-Blocking")
+plt.plot(x_py*8,yAvg_py,label="Python Blocking")
+plt.plot(x_NB*8,yAvg_NB,label="Python Non-Blocking")
 plt.legend(loc=2)
 plt.xlabel('Bytes')
+plt.xscale('log')
+plt.yscale('log')
+plt.ylabel('Time (Seconds)')
+plt.suptitle('Time V.s. Bytes Ping-Pong')
+plt.show()
+
+
+plt.plot(x*8,yAvg,label="C++ Blocking")
+plt.plot(x_03*8,yAvg_03,label="C++ Non-Blocking")
+plt.plot(x_py*8,yAvg_py,label="Python Blocking")
+plt.plot(x_NB*8,yAvg_NB,label="Python Non-Blocking")
+plt.legend(loc=2)
+plt.xlabel('Bytes')
+#plt.xscale('log')
+#plt.yscale('log')
 plt.ylabel('Time (Seconds)')
 plt.suptitle('Time V.s. Bytes Ping-Pong')
 plt.show()
