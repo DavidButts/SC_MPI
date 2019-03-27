@@ -29,7 +29,7 @@ plt.xscale('log')
 plt.yscale('log')
 plt.ylabel('Time (Seconds)')
 plt.suptitle('Time V.s. Bytes Ping-Pong')
-plt.show()
+plt.savefig('Time_Bytes_log.png')
 
 
 plt.plot(x*8,yAvg,label="C++ Blocking")
@@ -42,5 +42,5 @@ plt.xlabel('Bytes')
 #plt.yscale('log')
 plt.ylabel('Time (Seconds)')
 plt.suptitle('Time V.s. Bytes Ping-Pong')
-plt.show()
+plt.savefig('Time_Bytes_linear.png')
 
