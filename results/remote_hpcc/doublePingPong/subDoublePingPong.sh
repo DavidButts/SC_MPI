@@ -15,10 +15,15 @@
  
 ########## Command Lines to Run ##########
   
-cd $SLURM_SUBMIT_DIR 
+if [ -z "$SLURM_SUBMIT_DIR" ] ; then
+  SLURM_SUBMIT_DIR=$(dirname $0)
+fi
+
+echo $SLURM_SUBMIT_DIR
+cd $SLURM_SUBMIT_DIR
 
 numNodes=2
-home='../..'
+home="../../.."
 
 ######## Python  runs ##########
 
@@ -30,9 +35,17 @@ echo $cmd
 
 ######## C++ runs ##########
 
-cmd="srun -n ${numNodes}  ${home}/pingpongc++/ping_pong_non_blocking.py"
-echo $cmd
+buildCmd="mpic++ -O3 ${home}/pingpongc++/ping-pong.cpp -o pingpongblocking"
+runCmd="srun -n ${numNodes}  pingpongblocking"
+echo $buildCmd
+echo $runCmd
+$buildCmd
+$runCmd
 
-cmd="srun -n ${numNodes}  ${home}/pingpongc++/ping_pong_non_blocking.py"
-echo $cmd
-          
+buildCmd="mpic++ -O3 ${home}/pingpongc++/ping-pong-NoBlock.cpp -o pingpongnoblocking"
+runCmd="srun -n ${numNodes}  pingpongnoblocking"
+echo $buildCmd
+echo $runCmd
+$buildCmd
+$runCmd
+         
