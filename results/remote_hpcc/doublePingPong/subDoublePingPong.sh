@@ -44,14 +44,14 @@ $cmd
 
 ######## C++ runs ##########
 
-buildCmd="mpic++ -O3 ${home}/pingpongc++/ping_pong_blocking_double.cpp -o pingpongblocking"
+buildCmd="mpic++ -O3 ${home}/pingpong_c++/ping_pong_blocking_double.cpp -o pingpongblocking"
 runCmd="srun -n ${numNodes}  pingpongblocking"
 echo $buildCmd
 echo $runCmd
 $buildCmd
 $runCmd
 
-buildCmd="mpic++ -O3 ${home}/pingpongc++/ping_pong_non_blocking_double.cpp -o pingpongnoblocking"
+buildCmd="mpic++ -O3 ${home}/pingpong_c++/ping_pong_non_blocking_double.cpp -o pingpongnoblocking"
 runCmd="srun -n ${numNodes}  pingpongnoblocking"
 echo $buildCmd
 echo $runCmd
