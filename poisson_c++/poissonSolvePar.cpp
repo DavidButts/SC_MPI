@@ -2,14 +2,13 @@
 #include <stdlib.h>
 #include <cstring>
 //#include "hdf5.h"
-#include "H5Cpp.h"//use this one
 #include <mpi.h>
 #include <math.h>
 #include <vector>
-#include <omp.h>
 
 //timing library
 #include "get_walltime.c"
+#include "poisson_utils.cpp"
 
 //some physical constants
 #define inv_eo 1.2941e11
@@ -21,12 +20,12 @@
 #define NG 2
 
 // Define Global Grid Size (number of cells)
-#define NUMCELL_X  1000 //2^9-3
-#define NUMCELL_Y  1000 //2^9-3
+#define NUMCELL_X  4000 //2^9-3
+#define NUMCELL_Y  4000 //2^9-3
 
 // number of iterations to perform
 // poisson update
-#define ITERATIONS 1000
+#define ITERATIONS 500
 
 // defining real type so I can easily
 // switch between the two.
@@ -41,153 +40,7 @@ inline int index(int i, int j, int numNodeX){
 }
 
 
-// write to H5 file
-void printH5(real* phi,double* runTimePerIter,int* numNodeX,int* numNodeY){
-
-  //h5 globals
-  hid_t file_id;
-  herr_t status;
-
-  //Open file and name using input params.
-  file_id = H5Fcreate("poissonParFieldDump.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-  //create data space and data set for phi flat 1d data set.
-  hsize_t phiDim[2];
-  phiDim[0]=*numNodeY;
-  phiDim[1]=*numNodeX;
-  hid_t phiSpace_id = H5Screate_simple(2, phiDim, NULL);
-  hid_t phi_id = H5Dcreate2(file_id, "/phi", H5T_IEEE_F64LE,
-       phiSpace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Dwrite(phi_id, H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, phi);
-
-  //create runTime attribute
-  hsize_t runTimeDim=1;
-  hid_t runTimeAttSpace_id = H5Screate_simple(1, &runTimeDim, NULL);
-  hid_t runTimeAtt_id = H5Acreate2(phi_id, "Run-Time-Per-Iteration",
-           H5T_IEEE_F64LE, runTimeAttSpace_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(runTimeAtt_id, H5T_IEEE_F64LE, runTimePerIter);
-  status = H5Aclose(runTimeAtt_id);
-  status = H5Sclose(runTimeAttSpace_id);
-
-  //create row(X-axis) attribute
-  hsize_t rowSizeDim=1;
-  hid_t rowSizeAttSpace_id = H5Screate_simple(1, &rowSizeDim, NULL);
-  hid_t rowSizeAtt_id = H5Acreate2(phi_id, "numXNodes",
-           H5T_STD_I32LE, rowSizeAttSpace_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(rowSizeAtt_id, H5T_STD_I32LE, numNodeX);
-  status = H5Aclose(rowSizeAtt_id);
-  status = H5Sclose(rowSizeAttSpace_id);
-
-  //create col(Y-axis) attribute
-  hsize_t colSizeDim=1;
-  hid_t colSizeAttSpace_id = H5Screate_simple(1, &runTimeDim, NULL);
-  hid_t colSizeAtt_id = H5Acreate2(phi_id, "numYNodes",
-           H5T_STD_I32LE, colSizeAttSpace_id, H5P_DEFAULT, H5P_DEFAULT);
-  status = H5Awrite(colSizeAtt_id, H5T_STD_I32LE,  numNodeY);
-  status = H5Aclose(colSizeAtt_id);
-  status = H5Sclose(colSizeAttSpace_id);
-
-  //close all other id's and file_id.
-  status = H5Dclose(phi_id);
-  status = H5Sclose(phiSpace_id);
-  status = H5Fclose(file_id);
-
-}
-
-
-/*
- * create a vector of prime factors
- */
-vector<int> primeFactors(int n)
-{
-    vector<int> primeFactor;
-
-    // append 2's to prime factorization
-    while (n%2 == 0){
-        primeFactor.push_back(2);
-        n = n/2;
-    }
-    // append all of the odd numbers to
-    // prime factorization
-    for (int i = 3; i <= sqrt(n); i = i+2){
-        while (n%i == 0){
-          primeFactor.push_back(i);
-          n = n/i;
-        }
-    }
-    //if n is already a prime factor
-    if (n > 2){
-        primeFactor.push_back(n);
-    }
-
-    return primeFactor;
-}
-
-/*
- * determine optimal grid decomposition
- * (size of grid each rank will recieve).
- */
-vector<int> gridDecomp(int n){
-
-   //get prime factors
-   vector<int> v = primeFactors(n);
-
-   //load balanced vector
-   vector<int> lbV;
-
-   int lastIndex = v.size()-1;
-   int secondLastIndex = lastIndex-1;
-
-   //grab two highest values in prime factorization
-   //and reverse iterate through array if multiple
-   //next iteration by the smaller of the two elements.
-   for( int i =lastIndex ; i >= 0  ; i-- ){
-     if(i ==lastIndex ){
-       lbV.push_back(v[i]);
-     }
-     else if(i == secondLastIndex){
-       lbV.push_back(v[i]);
-     }
-     else{
-       if( (lbV[0]*v[i]) <= (lbV[1]*v[i]) ){
-         lbV[0]*=v[i];
-       }
-       else{
-         lbV[1]*=v[i];
-       }
-     }
-   }
-   //if n is a prime factor already
-   //then we cant decomp grid by
-   //two dimensions
-   if(lbV.size()==1){
-     lbV.push_back(0);
-   }
-
-  return lbV;
-}
-
-// checks if you have have a niehboring rank based on your rank
-inline int rankIsValid(int myRank, int rank, vector<int> &decomp, int leftRight){
-
-  int size = decomp[0]*decomp[1];
-  int rtnValue = 1;
-  if(leftRight){
-    if(myRank%decomp[0]==0&&rank == myRank-1){
-      rtnValue = 0;
-    }
-    else if(myRank%decomp[0]==(decomp[0]-1)&&rank == myRank+1){
-      rtnValue = 0;
-    }
-  }
-  else if(rank>=size || rank < 0){
-    rtnValue = 0;
-  }
-  return rtnValue;
-}
-
 int main(int argc, char** argv){
-
 
   int p;
   MPI_Init_thread(&argc,&argv,MPI_THREAD_FUNNELED,&p);
@@ -195,7 +48,6 @@ int main(int argc, char** argv){
   int rank, size;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
 
   //arbitrary grid size
   //assumeing square
@@ -254,7 +106,7 @@ int main(int argc, char** argv){
   // Point Charge distribution located
   // in the middle of each rank's grid.
   if( rank == 0){
-    rho[index(localNodeX/2,localNodeY/2,localNodeX)] = -e;
+    rho[(localNodeX/2) + (localNodeY/2)*localNodeX] = -e;
   }
 
   //Requests for boundary ranks
@@ -309,19 +161,32 @@ int main(int argc, char** argv){
       MPI_Irecv(phi_W,localNodeY,MPI_DOUBLE,westRank,2,MPI_COMM_WORLD,&sendWestRank);
     }
 
-
     //interior jacobi poisson solve
-    #pragma omp parallel for
     for(int j=1;j<localNodeY-1;++j){
       for(int i=1;i<localNodeX-1;++i){
         phi_1[index(i,j,localNodeX)] = 0.25*(
-                               phi_0[index(i+1,j,localNodeX)]
-                              +phi_0[index(i-1,j,localNodeX)]
-                              +phi_0[index(i,j+1,localNodeX)]
-                              +phi_0[index(i,j-1,localNodeX)]
-                              +inv_eo*(dx*dx)*rho[index(i,j,localNodeX)]);
+                               phi_0[i + 1 + j*localNodeX]
+                              +phi_0[i - 1 + j*localNodeX]
+                              +phi_0[i + j*localNodeX + localNodeX]
+                              +phi_0[i + j*localNodeX - localNodeX]
+                              +inv_eo*(dx*dx)*rho[i + j*localNodeX]);
       }
     }
+
+    //interior jacobi poisson solve
+    for( int k = 1; k<20; ++k){
+      for(int j=1;j<localNodeY-1;++j){
+        for(int i=1;i<localNodeX-1;++i){
+          phi_1[index(i,j,localNodeX)] = 0.25*(
+                               phi_1[i + 1 + j*localNodeX]
+                              +phi_1[i - 1 + j*localNodeX]
+                              +phi_1[i + j*localNodeX + localNodeX]
+                              +phi_1[i + j*localNodeX - localNodeX]
+                              +inv_eo*(dx*dx)*rho[i + j*localNodeX]);
+        }
+      }
+    }
+
 
     //recieve ghost zones from neighbors
     //North
@@ -348,19 +213,19 @@ int main(int argc, char** argv){
     //update left and right exterior nodes
     for(int j=1;j<localNodeY-1;++j){
 
-      phi_1[index(0,j,localNodeX)] = 0.25*(
+      phi_1[j*localNodeX] = 0.25*(
                        phi_E[j]//phi_0[index(1,j,localNodeX)]
-                      +phi_0[index(1,j,localNodeX)]
-                      +phi_0[index(0,j+1,localNodeX)]
-                      +phi_0[index(0,j-1,localNodeX)] //seg_fault
-                      +inv_eo*(dx*dx)*rho[index(0,j,localNodeX)]);
+                      +phi_0[1+j*localNodeX]
+                      +phi_0[(j+1)*localNodeX]
+                      +phi_0[(j-1)*localNodeX] //seg_fault
+                      +inv_eo*(dx*dx)*rho[j*localNodeX]);
 
-      phi_1[index((localNodeX-1),j,localNodeX)] = 0.25*(
+      phi_1[(localNodeX-1)+j*localNodeX] = 0.25*(
                        phi_W[j]//phi_0[index((localNodeX),j,localNodeX)]
-                      +phi_0[index((localNodeX-2),j,localNodeX)]
-                      +phi_0[index((localNodeX-1),j+1,localNodeX)]
-                      +phi_0[index((localNodeX-1),j-1,localNodeX)]//seg_fault
-                      +inv_eo*(dx*dx)*rho[index((localNodeX-1),j,localNodeX)]);
+                      +phi_0[(localNodeX-2)+j*localNodeX]
+                      +phi_0[(localNodeX-1)+(j+1)*localNodeX]
+                      +phi_0[(localNodeX-1)+(j-1)*localNodeX]//seg_fault
+                      +inv_eo*(dx*dx)*rho[(localNodeX-1)+j*localNodeX]);
 
     }
 
@@ -369,18 +234,18 @@ int main(int argc, char** argv){
     for(int i=1;i<localNodeX-1;++i){
 
       phi_1[index(i,0,localNodeX)] = 0.25*(
-                             phi_0[index(i+1,0,localNodeX)]
-                            +phi_0[index(i-1,0,localNodeX)]//seg-faults
-                            +phi_0[index(i,1,localNodeX)]
+                             phi_0[i+1]
+                            +phi_0[i-1]//seg-faults
+                            +phi_0[i+localNodeX]
                             +phi_N[i]//+phi_0[index(i,-1,localNodeX)]
-                            +inv_eo*(dx*dx)*rho[index(i,0,localNodeX)]);
+                            +inv_eo*(dx*dx)*rho[i]);
 
       phi_1[index(i,(localNodeY-1),localNodeX)] = 0.25*(
-                             phi_0[index(i+1,(localNodeY-1),localNodeX)]
-                            +phi_0[index(i-1,(localNodeY-1),localNodeX)]//seg-faults
+                             phi_0[i+1 + (localNodeY-1)*localNodeX]
+                            +phi_0[i-1 + (localNodeY-1)*localNodeX]//seg-faults
                             +phi_S[i] //+phi_0[index(i,(localNodeY),localNodeX)]
-                            +phi_0[index(i,(localNodeY-2),localNodeX)]
-                            +inv_eo*(dx*dx)*rho[index(i,(localNodeY-1),localNodeX)]);
+                            +phi_0[i + (localNodeY-2)*localNodeX]
+                            +inv_eo*(dx*dx)*rho[i + (localNodeY-1)*localNodeX]);
 
 
     }
@@ -416,11 +281,11 @@ int main(int argc, char** argv){
                             +phi_S[(localNodeX-1)]
                             +inv_eo*(dx*dx)*rho[index((localNodeX-1),(localNodeY-1),localNodeX)]);
 
-
     //swap pointers
     real* tmp = phi_0;
     phi_0 = phi_1;
     phi_1 = tmp;
+
   }
 
   //calculate runtime/(number of iterations)
@@ -447,7 +312,7 @@ int main(int argc, char** argv){
 
   //free memory
   free(phi_0);
-  free(phi_1);
+  //free(phi_1);
   free(rho);
 
   //frew MPI type

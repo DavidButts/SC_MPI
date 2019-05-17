@@ -17,24 +17,10 @@ CXX=h5c++
 
 NCC=nvcc
 
-ser:
-	$(CXX) -O3 -ffast-math -o poissonSolveSer poissonSolveSer.cpp
-
 poissonSolvePar.o:poissonSolvePar.cpp
-	$(CXX) -c -O3 -ffast-math  poissonSolvePar.cpp -fopenmp
-
-par:poissonSolvePar.o
-	$(CXX) -O3  -ffast-math -o poissonSolvePar poissonSolvePar.cpp -fopenmp
-
-gpu:
-	$(NCC) -O3 --use_fast_math  -l/opt/software/HDF5/1.10.2-foss-2018b/lib/libhdf5.so -lmpi poissonSolveGPU.cu
-
-gpun:
-	$(NCC) -O3 --use_fast_math  -l/opt/software/HDF5/1.10.2-foss-2018b/lib/libhdf5.so -lmpi poissonSolveGPU_Naive.cu
-
-gpus:
-	$(NCC) -O3 --use_fast_math  -l/opt/software/HDF5/1.10.2-foss-2018b/lib/libhdf5.so -lmpi poissonSolveGPU_Shared.cu
-
+	$(CXX) -O3 -ffast-math  poissonSolvePar.cpp
+all:poissonSolvePar.o
+	$(CXX) -O3 -ffast-math -o poissonSolvePar poissonSolvePar.cpp
 clean:
 	rm *.h5
 	rm *.o
