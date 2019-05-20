@@ -8,8 +8,8 @@ using namespace std;
 typedef double real;
 
 struct object{
-  int a;
-  double b[20];
+  double a[20];
+  int b;
   char c;
 };
 
@@ -25,8 +25,11 @@ int main(void){
   int totalSize = pow(2,24);
   int rank;
   int size;
-  real* bufferSend = NULL;
-  real* bufferRecv = NULL;
+  object* bufferSend=NULL;
+  object* bufferRecv=NULL;
+
+  cout << sizeof(object) << endl;
+
   double start, end, totalTime;
 
   MPI_Init(NULL,NULL);
@@ -42,13 +45,13 @@ int main(void){
   int blocklengths[structlen];
   MPI_Datatype types[structlen];
   MPI_Aint displacements[structlen];
-  //int a = 5;
-  blocklengths[0] = 1;
-  types[0] = MPI_INT;
-  displacements[0] = offsetof(object,a);
   //double b[20];
-  blocklengths[1] = 20;
-  types[1] = MPI_DOUBLE;
+  blocklengths[0] = 20;
+  types[0] = MPI_DOUBLE;
+  displacements[0] = offsetof(object,a);
+  //int a = 5;
+  blocklengths[1] = 1;
+  types[1] = MPI_INT;
   displacements[1] = offsetof(object,b);
   //char c = 'b';
   blocklengths[2] = 1;
@@ -73,12 +76,12 @@ int main(void){
 
     //ranks 1 and 0 allocate memory
     if(rank==0){
-      bufferSend = (real* ) malloc(n*sizeof(object));
-      bufferRecv = (real* ) malloc(n*sizeof(object));
+      bufferSend = (object* ) malloc(n*sizeof(object));
+      bufferRecv = (object* ) malloc(n*sizeof(object));
     }
     if(rank==size-1){
-      bufferSend = (real* ) malloc(n*sizeof(object));
-      bufferRecv = (real* ) malloc(n*sizeof(object));
+      bufferSend = (object* ) malloc(n*sizeof(object));
+      bufferRecv = (object* ) malloc(n*sizeof(object));
     }
 
     //loop that will perform non-block send/recv
