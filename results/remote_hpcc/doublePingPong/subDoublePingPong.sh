@@ -34,11 +34,11 @@ home="../../.."
 
 ######## Python  runs ##########
 
-cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_blocking.py"
+cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_blocking_double.py"
 echo $cmd       
 $cmd
 
-cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_non_blocking.py"
+cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_non_blocking_double.py"
 echo $cmd  
 $cmd
 
