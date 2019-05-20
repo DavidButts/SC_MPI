@@ -34,25 +34,25 @@ home="../../.."
 
 ######## Python  runs ##########
 
-cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_blocking_double.py"
+cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_blocking_vector.py"
 echo $cmd       
 $cmd
 
-cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_non_blocking_double.py"
+cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_non_blocking_vector.py"
 echo $cmd  
 $cmd
 
 ######## C++ runs ##########
 
-buildCmd="mpic++ -O3 ${home}/pingpong_c++/ping_pong_blocking_double.cpp -o pingpongblockingdouble"
-runCmd="srun -n ${numNodes}  pingpongblockingdouble"
+buildCmd="mpic++ -O3 ${home}/pingpong_c++/ping_pong_blocking_vector.cpp -o pingpongblockingvector"
+runCmd="srun -n ${numNodes}  pingpongblockingvector"
 echo $buildCmd
 echo $runCmd
 $buildCmd
 $runCmd
 
-buildCmd="mpic++ -O3 ${home}/pingpong_c++/ping_pong_non_blocking_double.cpp -o pingpongnoblockingdouble"
-runCmd="srun -n ${numNodes}  pingpongnoblockingdouble"
+buildCmd="mpic++ -O3 ${home}/pingpong_c++/ping_pong_non_blocking_vector.cpp -o pingpongnoblockingvector"
+runCmd="srun -n ${numNodes}  pingpongnoblockingvector"
 echo $buildCmd
 echo $runCmd
 $buildCmd
