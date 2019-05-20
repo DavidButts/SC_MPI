@@ -12,40 +12,52 @@ rank = comm.rank
 
 #only rank0 opens files
 if rank==0:
-  f=open("Python_NoBlocking_Vector.txt","w")
+  f=open("Python_NoBlocking_Struct.txt","w")
+
+# This code defines a C struct type in python
+#
+# Struct Object{
+#   double a[20];
+#   int b;
+#   char c;
+# };
+#
+# This is exactly 168 Bytes which can be Byte aligned like
+# C-struct is!
+Object = np.dtype([('a','(20,)f8'),('b',np.int32),('c','U1')])
+
+#init MPI STRUCT TYPE
+offsets = [Object.fields['a'][1], Object.fields['b'][1],Object.fields['c'][1]]
+types = [MPI.DOUBLE,MPI.INT,MPI.BYTE]
+struc = MPI.Datatype.Create_struct([1]*3, offsets, types)
+struc.Commit()
 
 #function
 def trial(steps,n):
 
-    #only rank 1 or rank 2 allocates memory
-    stride=n
-    if rank==0 or rank==(size-1):
-        bufferSend = np.ones(n*stride,dtype=np.float64)
-        bufferRecv = np.ones(n,dtype=np.float64)
-
-    vec = MPI.DOUBLE.Create_vector(n,1,stride)
-    vec.Commit()
+    #only rank0 and rank1 allocate memory
+    if rank == 0 or rank == (size-1):
+        bufferSend = np.zeros(n,dtype=Object)
+        bufferRecv = np.zeros(n,dtype=Object)
 
     #loop that performs time averaging of ping pong
     tot_time=0
     for t in range(steps):
         start = MPI.Wtime()
         if rank == 0:
-            reqS = comm.Isend([bufferSend, 1, vec], dest = (size-1), tag = 0)
-            reqR = comm.Irecv([bufferRecv, MPI.DOUBLE], source = (size-1), tag = 1)
+            reqS = comm.Isend([bufferSend, struc], dest = (size-1), tag = 0)
+            reqR = comm.Irecv([bufferRecv, struc], source = (size-1), tag = 1)
             reqR.Wait()
             reqS.Wait()
 
         if rank == size-1:
-            reqR = comm.Irecv([bufferRecv, MPI.DOUBLE], source = 0, tag = 0)
-            reqS = comm.Isend([bufferSend, 1, vec], dest = 0, tag = 1)
+            reqR = comm.Irecv([bufferRecv, struc], source = 0, tag = 0)
+            reqS = comm.Isend([bufferSend, struc], dest = 0, tag = 1)
             reqR.Wait()
             reqS.Wait()
 
         end = MPI.Wtime()
         tot_time += end - start
-
-    vec.Free()
 
     return tot_time/steps
 
@@ -67,3 +79,6 @@ for n in range(0,25,1):
 #only rank 0 closes file
 if rank==0:
   f.close()
+
+struc.Free()
+
