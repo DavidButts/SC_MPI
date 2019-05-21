@@ -1,7 +1,7 @@
 from mpi4py import MPI
 import numpy as np
 import time
-import matplotlib.pyplot as plt
+
 
 comm = MPI.COMM_WORLD
 
