@@ -1,7 +1,7 @@
 from mpi4py import MPI
 import numpy as np
 import time
-
+import sys
 
 comm = MPI.COMM_WORLD
 
@@ -73,8 +73,10 @@ for n in range(0,25,1):
     if rank == 0:
         rank1Time = comm.recv(source = (size-1),tag=2)
         print('n = %d' %(2**n))
+        sys.stdout.flush()
         strOut=("%d %f %f\n" %(2**n,t,rank1Time) )
         f.write(strOut)
+        f.flush()
 
 #only rank 0 closes file
 if rank==0:
