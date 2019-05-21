@@ -14,14 +14,9 @@
 #SBATCH --mem=MaxPerNode                   # memory required per node - amount of memory (in bytes)
 #SBATCH --job-name parJob      # you can give your job a name for easier identification (same as -J)
 
-#TO RUN LOAD THE FOLLOWING MODULES IN THE FOLLOWING ORDER!!!!!
-#module purge
-#module load GCC/7.3.0-2.30
-#module load OpenMPI/3.1.1-CUDA
-#module load Python/3.7.0 
- 
+
 ########## Command Lines to Run ##########
-  
+
 if [ -z "$SLURM_SUBMIT_DIR" ] ; then
   SLURM_SUBMIT_DIR=$(dirname $0)
 fi
@@ -32,14 +27,18 @@ cd $SLURM_SUBMIT_DIR
 numNodes=2
 home="../../.."
 
+loadModules="source ${home}/results/utilScripts/moduleLoad.sh"
+echo $loadModules
+$loadModules
+
 ######## Python  runs ##########
 
 cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_blocking_struct.py"
-echo $cmd       
+echo $cmd
 $cmd
 
 cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_non_blocking_struct.py"
-echo $cmd  
+echo $cmd
 $cmd
 
 ######## C++ runs ##########
@@ -57,4 +56,4 @@ echo $buildCmd
 echo $runCmd
 $buildCmd
 $runCmd
-         
+
