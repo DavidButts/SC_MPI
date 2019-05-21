@@ -32,6 +32,10 @@ cd $SLURM_SUBMIT_DIR
 numNodes=2
 home="../../.."
 
+loadModules="source ${home}/results/utilScripts/moduleLoad.sh"
+echo $loadModules
+$loadModules
+
 ######## Python  runs ##########
 
 cmd="srun -n ${numNodes} python  ${home}/pingpong_python/ping_pong_blocking_double.py"
