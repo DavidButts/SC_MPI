@@ -47,7 +47,7 @@ int main(void){
   for( int n = 1; n <= totalSize; n*=2){
 
     //ranks 1 and 0 allocate memory
-    int stride = n;
+    int stride = 50;
     if(rank==rank0){
       bufferSend = (real* ) malloc(n*stride*sizeof(real));
       bufferRecv = (real* ) malloc(n*sizeof(real));

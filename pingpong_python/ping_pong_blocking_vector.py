@@ -19,7 +19,7 @@ if rank==0:
 def trial(steps,n):
 
     #only rank0 and rank1 allocate memory
-    stride=n
+    stride=50
     if rank == 0 or rank == (size-1):
         bufferSend = np.ones(n*stride,dtype=np.float64)
         bufferRecv = np.ones(n,dtype=np.float64)
