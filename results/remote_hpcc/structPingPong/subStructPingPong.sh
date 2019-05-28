@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=00:30:00             # limit of wall clock time - how long the job will run (same as -t)
+#SBATCH --time=12:30:00             # limit of wall clock time - how long the job will run (same as -t)
 #SBATCH --nodes=1
 #SBATCH --ntasks=2                 # number of tasks - how many tasks (nodes) that you require (same as -n)
 #SBATCH --tasks-per-node=40
@@ -44,14 +44,14 @@ $cmd
 ######## C++ runs ##########
 
 buildCmd="mpic++ -O3 ${home}/pingpong_c++/ping_pong_blocking_struct.cpp -o pingpongblockingstruct"
-runCmd="srun -n ${numNodes}  pingpongblockingvector"
+runCmd="srun -n ${numNodes}  pingpongblockingstruct"
 echo $buildCmd
 echo $runCmd
 $buildCmd
 $runCmd
 
 buildCmd="mpic++ -O3 ${home}/pingpong_c++/ping_pong_non_blocking_struct.cpp -o pingpongnoblockingstruct"
-runCmd="srun -n ${numNodes}  pingpongnoblockingvector"
+runCmd="srun -n ${numNodes}  pingpongnoblockingstruct"
 echo $buildCmd
 echo $runCmd
 $buildCmd
