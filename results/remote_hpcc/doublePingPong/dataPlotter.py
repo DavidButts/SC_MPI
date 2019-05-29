@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
-inFile = open("Cpp_Block_Vector.txt",'r')
-inFile2 = open("Cpp_NoBlock_Vector.txt",'r')
-inFile3 = open("Python_Blocking_Vector.txt",'r')
-inFileNB = open("Python_NoBlocking_Vector.txt",'r')
+inFile = open("Cpp_Block_Double.txt",'r')
+inFile2 = open("Cpp_NoBlock_Double.txt",'r')
+inFile3 = open("Python_Blocking_Double.txt",'r')
+inFileNB = open("Python_NoBlocking_Double.txt",'r')
 
 x, y0, y1 = np.genfromtxt(inFile, unpack=True)
 x_03, y0_03, y1_03 = np.genfromtxt(inFile2, unpack=True)
@@ -28,9 +28,9 @@ plt.xlabel('Bytes')
 plt.xscale('log')
 plt.yscale('log')
 plt.ylabel('Time (Seconds)')
-plt.suptitle('Time V.s. Bytes Ping-Pong')
+plt.suptitle('Time V.s. Bytes Ping-Pong Type: Double')
 plt.savefig('Time_Bytes_log.png')
-
+plt.show()
 
 plt.plot(x*8,yAvg,label="C++ Blocking")
 plt.plot(x_03*8,yAvg_03,label="C++ Non-Blocking")
@@ -41,6 +41,7 @@ plt.xlabel('Bytes')
 #plt.xscale('log')
 #plt.yscale('log')
 plt.ylabel('Time (Seconds)')
-plt.suptitle('Time V.s. Bytes Ping-Pong')
+plt.suptitle('Time V.s. Bytes Ping-Pong Type: Double')
 plt.savefig('Time_Bytes_linear.png')
+plt.show()
 
