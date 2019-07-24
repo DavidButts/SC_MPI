@@ -34,7 +34,7 @@ plt.yscale('log')
 plt.grid(alpha=0.8)
 plt.tick_params(axis='both', which='major', labelsize=10)
 plt.ylabel('Time (Seconds)',**font)
-plt.suptitle('Time V.s. Bytes Ping-Pong Type: MPI Vector',**font)
+plt.suptitle('Time vs. Bytes Ping-Pong Type: MPI Vector',**font)
 plt.savefig('Time_Bytes_log.png',bbox_inches='tight')
 plt.show()
 
